@@ -40,17 +40,18 @@ end
 function dwn()
     -- body
     n = n + 1
-    v = data[n]
+    v = files[n]
+    print('initiating download')
     if v == nil then 
         --dofile(data[1]..".lc")
-        print('no file name:', dump(data))
-        bootfile= string.gsub(data[1], '\.lua$','') --string.gsub(s, '\....$','')
+        print('no more files to download')
+        bootfile= string.gsub(files[1], '\.lua$','') --string.gsub(s, '\....$','')
         s.boot = bootfile..".lc"
         SaveX("No error")
         node.restart()
 
     else 
-        print("Filename in dwn: "..v)
+        print('processing file ', n,':',v)
         filename=v
 
             file.remove(v);
@@ -59,6 +60,7 @@ function dwn()
             payloadFound = false
             conn=net.createConnection(net.TCP, 0) 
             conn:on("receive", function(conn, payload)
+                print('received payload for ',v)
                 if (payloadFound == true) then
                     file.write(payload)
                     file.flush()
@@ -76,12 +78,14 @@ function dwn()
             conn:on("disconnection", function(conn) 
                 conn = nil
                 file.close()
-                ext = string.sub(v, -3)
-                if (ext == "lua") then
-                    node.compile(filename)
+                print('finished downloading', v)
+                if( v ~= nil) then
+                    ext = string.sub(v, -3)
+                    if (ext == "lua") then
+                        node.compile(filename)
+                    end
+                    dwn()
                 end
-                dwn()
-
             end)
             conn:on("connection", function(conn)
                 conn:send("GET /"..s.path.."/uploads/"..id.."/"..v.." HTTP/1.0\r\n"..
@@ -110,33 +114,34 @@ function FileList(sck,c)
         return
     end
     data = mysplit(c, "\n") -- fill the field with filenames
+    files = {}
     print('data:',dump(data))
-    for i=1, #data do
-        if(data[i] ~= nil) then
-            local extension = string.sub(data[i], -3)
-            if (string.len(data[i]) > 0) then
+    for key, value in pairs(data) do
+        print('file names', key, value)
+        if(value ~= nil) then
+            local extension = string.sub(value, -3)
+            if (string.len(value) > 0) then
                 if (extension == "lua") then
-                    data = { data[i] }
+                    data = { value }
+                    table.insert(files,value)
                 end
             end
         end
     end
-    print('data:', dump(data))
+    print('all files',dump(files))
     n = 1
     
-    v = data[n]
-    print("Filename in FileList: ", v)
-    if(v ~= nil) then
-        filename=v
-        file.remove(v);
-        file.open(v, "w+")
-    
-        payloadFound = false
+    value= files[n]
+    print("processing file ", n, value)
+    if(value ~= nil) then
+        filename=value
+        file.remove(value);
+        file.open(value, "w+")
         connection=net.createConnection(net.TCP, 0)
+        payloadFound = false 
     end
     connection:on("receive", function(conn, payload)
-    print('received payload:',payload)
-        print('filename after payload: ',v)
+        print('received payload for ',value)
         if (payloadFound == true) then
             file.write(payload)
             file.flush()
@@ -155,26 +160,21 @@ function FileList(sck,c)
         conn2 = nil
         connection = nil
         file.close()
-        if(v ~= nil) then
-            ext = string.sub(v, -3)
+        if(value ~= nil) then
+            print('finished downloading', value)
+            ext = string.sub(value, -3)
             if (ext == "lua") then
-                node.compile(v)
+                node.compile(value)
             end
             
         end
         dwn()
     end)
     connection:on("connection", function(conn2)
-        print('in connection', v, dump(data))
-        if(v ~= nil) then
-        print("GET /"..s.path.."/uploads/"..id.."/"..v.." HTTP/1.1\r\n"..
-                  "Host: "..s.host.."\r\n"..
-                  "Connection: close\r\n"..
-                  "Accept-Charset: utf-8\r\n"..
-                  "Accept-Encoding: \r\n"..
-                  "User-Agent: Mozilla/4.0 (compatible; esp8266 Lua; Windows NT 5.1)\r\n".. 
-                  "Accept: */*\r\n\r\n")
-            conn2:send("GET /"..s.path.."/uploads/"..id.."/"..v.." HTTP/1.1\r\n"..
+        print('in connection getting ', files[n])
+        if(files[1] ~= nil) then
+            print("GET /"..s.path.."/uploads/"..id.."/"..files[n].." HTTP/1.1\r\n")
+            conn2:send("GET /"..s.path.."/uploads/"..id.."/"..files[n].." HTTP/1.1\r\n"..
                   "Host: "..s.host.."\r\n"..
                   "Connection: close\r\n"..
                   "Accept-Charset: utf-8\r\n"..
@@ -217,12 +217,7 @@ tmr.alarm (1, 1000, 1, function ( )
   
    if wifi.sta.getip ( ) ~= nil then
     print ("ip: " .. wifi.sta.getip ( ))
-    print("GET /".. s.path .."/node.php?id="..id.."&list"..
-                " HTTP/1.1\r\n".. 
-                "Host: "..s.domain.."\r\n"..
-                "Accept: */*\r\n"..
-                "User-Agent: Mozilla/4.0 (compatible; esp8266 Lua;)"..
-                "\r\n\r\n")
+    print("GET /".. s.path .."/node.php?id="..id.."&list")
     tmr.stop (1)
     -- get list of files
     sk=net.createConnection(net.TCP, 0)
