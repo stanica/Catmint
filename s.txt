@@ -1,0 +1,8 @@
+host=makernight.io
+path=MessageCat
+ssid=Other Network...
+update=4
+pwd=g00nsquad
+err=
+domain=makernight.io
+boot=
