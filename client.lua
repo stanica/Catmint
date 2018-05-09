@@ -88,7 +88,7 @@ function dwn()
                 end
             end)
             conn:on("connection", function(conn)
-                conn:send("GET /"..s.path.."/uploads/"..id.."/"..v.." HTTP/1.0\r\n"..
+                conn:send("GET /"..s.path.."/files/"..id.."/uploads/"..v.." HTTP/1.0\r\n"..
                       "Host: "..s.host.."\r\n"..
                       "Connection: close\r\n"..
                       "Accept-Charset: utf-8\r\n"..
@@ -113,10 +113,12 @@ function FileList(sck,c)
     if(string.len(c) == 0) then
         return
     end
+    --c = string.gsub(c, '"','')
     data = mysplit(c, "\n") -- fill the field with filenames
     files = {}
     print('data:',dump(data))
     for key, value in pairs(data) do
+        value = string.gsub(value, "%s+", "")
         print('file names', key, value)
         if(value ~= nil) then
             local extension = string.sub(value, -3)
@@ -141,7 +143,7 @@ function FileList(sck,c)
         payloadFound = false 
     end
     connection:on("receive", function(conn, payload)
-        print('received payload for ',value)
+        print('received payload for ',value, payload)
         if (payloadFound == true) then
             file.write(payload)
             file.flush()
@@ -173,8 +175,8 @@ function FileList(sck,c)
     connection:on("connection", function(conn2)
         print('in connection getting ', files[n])
         if(files[1] ~= nil) then
-            print("GET /"..s.path.."/uploads/"..id.."/"..files[n].." HTTP/1.1\r\n")
-            conn2:send("GET /"..s.path.."/uploads/"..id.."/"..files[n].." HTTP/1.1\r\n"..
+            print("GET /"..s.path.."/files/"..id.."/uploads/"..files[n].." HTTP/1.1\r\n")
+            conn2:send("GET /"..s.path.."/files/"..id.."/uploads/"..files[n].." HTTP/1.1\r\n"..
                   "Host: "..s.host.."\r\n"..
                   "Connection: close\r\n"..
                   "Accept-Charset: utf-8\r\n"..
@@ -211,18 +213,19 @@ tmr.alarm (1, 1000, 1, function ( )
   iFail = iFail -1
   if (iFail == 0) then
     SaveX("could not access "..s.ssid)
-    file.remove("s.txt")
+    --file.remove("s.txt")
     node.restart()
   end      
   
    if wifi.sta.getip ( ) ~= nil then
     print ("ip: " .. wifi.sta.getip ( ))
-    print("GET /".. s.path .."/node.php?id="..id.."&list")
+    print("GET /".. s.path .."/files/"..id.."/list")
     tmr.stop (1)
     -- get list of files
     sk=net.createConnection(net.TCP, 0)
     sk:on("connection",function(conn, payload)
-                sk:send("GET /".. s.path .."/node.php?id="..id.."&list"..
+                print(payload)
+                conn:send("GET /".. s.path .."/files/"..id.."/list"..
                 " HTTP/1.1\r\n".. 
                 "Host: "..s.domain.."\r\n"..
                 "Accept: */*\r\n"..

@@ -1,8 +1,8 @@
-host=makernight.io
-path=MessageCat
-ssid=Home
+host=3cc3b597.ngrok.io
+path=api
+ssid=Other Network...
 update=4
-pwd=roflpwnd
+pwd=g00nsquad
 err=
-domain=makernight.io
+domain=3cc3b597.ngrok.io
 boot=

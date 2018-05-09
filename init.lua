@@ -30,7 +30,7 @@ end
 function update()
 conn3=net.createConnection(net.TCP, 0)
     conn3:on("connection",function(conn, payload)
-    conn3:send("GET /"..s.path.."/node.php?id="..id.."&update"..
+    conn3:send("GET /".. s.path .."/files/"..id.."/update"..
                 " HTTP/1.1\r\n".. 
                 "Host: "..s.domain.."\r\n"..
                 "Accept: */*\r\n"..
@@ -48,7 +48,6 @@ conn3=net.createConnection(net.TCP, 0)
             conn3:close()
             conn3 = nil
         end
-
     end)
     conn3:connect(80,s.host)
 end
@@ -58,19 +57,31 @@ print ("nodeID is: "..id)
 
 print(collectgarbage("count").." kB used")
 LoadX()
+code, reason = node.bootreason()
+if((code == 2 and reason == 3) or code == 4) then
+    s.boot=nil
+    SaveXY()
+    node.restart()
+end
 
 if (s.host~="") then
---if (s.host and s.domain and s.path) then
     if (tonumber(s.update)>0) then
         tmr.create():alarm (10000, tmr.ALARM_AUTO, function()
                 update()
             end)
     end
     if (s.boot~="") then
-        dofile(s.boot)
-    else    
+        if(file.open(s.boot)) then   
+            dofile(s.boot)
+        else 
+            s.boot=nil
+            SaveXY()
+            node.restart() 
+        end
+    else
         dofile("client.lua")
     end
 else
-    dofile("server.lua")   
+    --dofile("server.lua")
+    print('shit') 
 end 
